@@ -3,7 +3,10 @@ use tauri::Manager;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn render(app: tauri::AppHandle) {    
-    app.get_webview_window("overlay").unwrap().show().unwrap();    
+    let view =  app.get_webview_window("overlay").unwrap();        
+    view.eval("window.location.reload();").unwrap();
+    view.open_devtools();
+    view.show().unwrap();    
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -11,6 +14,12 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![render])
+        .on_window_event(|window, event| match event {
+            tauri::WindowEvent::Destroyed => {                
+                window.app_handle().exit(0);
+            }
+            _ => {}
+        })
         .setup(|app| {
             let webview_url = tauri::WebviewUrl::App("/overlay".into());
 

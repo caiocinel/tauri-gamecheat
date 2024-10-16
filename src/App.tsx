@@ -1,32 +1,41 @@
 import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
+import { cursorPosition } from "@tauri-apps/api/window";
 
-function App() {
+function App() {  
+  if(window.location.pathname === "/overlay"){       
+    const render = useCallback(async () => {
+      const canvas = document.getElementById("overlay") as HTMLCanvasElement;
+      const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+      
+      const { x, y } = await cursorPosition();      
 
-  if(window.location.pathname === "/overlay"){    
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      const mouseX = (x - rect.left) * scaleX;
+      const mouseY = (y - rect.top) * scaleY;
+
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);           
+
+      ctx.beginPath();
+      ctx.arc(mouseX, mouseY, 2, 0, 2 * Math.PI, false);      
+      ctx.fillStyle = '#ffffff55';
+      ctx.fill();      
+
+      requestAnimationFrame(render);
+    }, []);
 
     useEffect(() => {
-      const canvas = document.getElementById("overlay") as HTMLCanvasElement;
-
-      canvas.width = 3440;
-      canvas.height = 1440;
-
-      const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-
-      const render = async () => {
-        const { width, height } = canvas;
-        ctx.clearRect(0, 0, width, height);
-        ctx.fillStyle = "#00ffff33";
-        ctx.fillRect(0, 0, width, height);
-      };
-
-      render();
-    }, [window.location.pathname])
+      render();      
+    }, [render]);
 
 
     return (      
-      <canvas id="overlay"/>
+      <canvas style={{ height: '100vh', width: '100vw', display: 'block' }} id="overlay"/>
     );
   }
 
