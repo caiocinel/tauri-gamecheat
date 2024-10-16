@@ -1,9 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
+import Menu from "./Menu";
+import Overlay from "./overlay/Overlay";
+import './App.css';
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    {window.location.pathname === "/overlay" ? <Overlay /> : <Menu />}
   </React.StrictMode>,
 );
