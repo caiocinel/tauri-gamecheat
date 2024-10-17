@@ -3,12 +3,18 @@ import { cursorPosition } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useState } from "react";
 export default function Overlay() {
   const [roundSize, setRoundSize] = useState<number | null>(globalThis.roundSize ?? 2);
+  const [playerData, setPlayerData] = useState<any>(null);
 
   useEffect(() => {
     listen('change-roundsize', (event: any) => {
       setRoundSize(event.payload);
-      console.log('change-roundsize: ', event.payload);
     });
+
+    listen('update_player_data', (event: any) => {
+      setRoundSize(event.payload);
+    });
+
+
   }, []);
 
   const render = useCallback( () => {    
@@ -20,10 +26,10 @@ export default function Overlay() {
     ctx.beginPath();
     ctx.strokeStyle = 'red';
     ctx.lineWidth = 1;
-    ctx.moveTo(50, 50);
+    ctx.moveTo(roundSize, 50);
     ctx.lineTo(300, 300);
     ctx.moveTo(300, 50);
-    ctx.lineTo(50, 300);
+    ctx.lineTo(roundSize, 300);
     ctx.stroke();
 
     globalThis.animationId = requestAnimationFrame(render);
