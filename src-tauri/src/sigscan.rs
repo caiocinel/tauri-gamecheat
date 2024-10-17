@@ -124,10 +124,10 @@ pub fn find_signature(sig: &Signature, process: &Process) -> Result<usize> {
         })?;
 
         let tmp = if process.is_wow64 {
-            let raw: u32 = unsafe { mem::transmute_copy(data) };
+            let raw: u32 = unsafe { std::ptr::read_unaligned(data as *const u8 as *const u32) };
             raw as usize
         } else {
-            let raw: u64 = unsafe { mem::transmute_copy(data) };
+            let raw: u64 = unsafe { std::ptr::read_unaligned(data as *const u8 as *const u64) };
             raw as usize
         };
 

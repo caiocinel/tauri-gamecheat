@@ -1,13 +1,9 @@
-use std::process::exit;
-
 use sigscan::Signature;
 use tauri::{Manager, Emitter};
+use std::process::exit;
 mod memlib;
 mod sigscan;
-#[macro_use]
-extern crate failure;
-#[macro_use]
-extern crate log;
+
 
 #[tauri::command]
 fn render(app: tauri::AppHandle) {    
@@ -33,33 +29,41 @@ async fn update_player_data(app: tauri::AppHandle) {
 pub fn run() {
 
 
-    let process = memlib::from_name("ac_client.exe")
+        let process = memlib::from_name("ac_client.exe")
         .ok_or_else(|| {
-            error!("Could not open process {}!", "ac_client.exe");
+            println!("Could not open process {}!", "ac_client.exe");
             exit(1);
         })
         .unwrap();
+
+    println!("456");
 
 
     let sig = Signature {
         name: "Base".to_string(),
         module: "ac_client.exe".to_string(),
-        pattern: "A1 ? ? ? ? ? ? ? ? F6 0F 84 5F".to_string(),
-        offsets: vec![0x3],
-        rip_relative: true,
-        rip_offset: 0x7,
+        pattern: "8B 0D ? ? ? ? 46 3B ? 7C ? 8B 35".to_string(),
+        offsets: vec![0x2],
+        rip_relative: false,
+        rip_offset: 0,
         extra: 0,
-        relative: true
+        relative: false
     };
+    println!("789");
 
     match sigscan::find_signature(&sig, &process) {
         Ok(r) => {            
-            info!("Found signature: {} => {:#X}", "Base", r);
+            println!("Found signature: {} => {:#X}", "Base", r);            
+
+            //print the value at the address
+            let value = process.read::<u32>(r).unwrap();
+            println!("Value at address: {}", value);
+
         }
-        Err(err) => warn!("{} sigscan failed: {}", "Base", err),
+        Err(err) => println!("{} sigscan failed: {:?}", "Base", err),
     };
 
- 
+
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
