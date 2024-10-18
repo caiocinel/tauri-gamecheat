@@ -12,7 +12,8 @@ function Menu() {
   
   return (
     <main className="container" style={{ width: '480px', marginLeft: 'auto', marginRight: 'auto'}}>      
-      <button onClick={async () => await invoke("render")}>Render</button>                  
+      <button onClick={async () => await invoke("render")}>Render</button>
+      <button onClick={async () => await invoke("start")}>Start</button>
       <input type="number" value={roundSize} onChange={(e) => setRoundSize(parseInt(e.target.value))} />
     </main>
   );

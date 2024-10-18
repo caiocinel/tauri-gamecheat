@@ -22,10 +22,13 @@
 
 extern crate winapi;
 
+use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::{mem, ptr};
+
+use log::{debug, warn};
 
 use self::winapi::shared::basetsd::SIZE_T;
 use self::winapi::shared::minwindef::{BOOL, FALSE, LPCVOID, LPVOID, PBOOL};
@@ -41,6 +44,7 @@ use self::winapi::um::tlhelp32::{
 };
 use self::winapi::um::winnt::PROCESS_ALL_ACCESS;
 use self::winapi::um::wow64apiset::IsWow64Process;
+use std::sync::{Arc, Mutex};
 use crate::memlib::*;
 
 impl Constructor for PROCESSENTRY32W {
@@ -61,11 +65,15 @@ pub struct Process {
     pub is_wow64: bool,
 
     // Process `HANDLE`.
-    handle: HANDLE,
+    handle: *mut winapi::ctypes::c_void,
 
     // List of modules.
-    modules: RefCell<HashMap<String, Rc<super::module::Module>>>,
+    modules: Arc<Mutex<HashMap<String, Arc<super::module::Module>>>>,
 }
+
+unsafe impl Send for Process {}
+
+unsafe impl Sync for Process {}
 
 impl Process {
     #[allow(dead_code)]
@@ -112,13 +120,15 @@ impl Process {
 }
 
 impl Process {
-    pub fn get_module(&self, name: &str) -> Option<Rc<super::module::Module>> {
-        let mut b = self.modules.borrow_mut();
+    pub fn get_module(&self, name: &str) -> Option<Arc<super::module::Module>> {
+        let mut b1 = self.modules.lock().unwrap();
+        let b = b1.borrow_mut();
         if b.contains_key(name) {
-            return b.get(name).cloned();
+            let b2 = b.get(name).unwrap();
+            return Some(b2.clone());
         }
 
-        super::module::get(name, self).and_then(|m| b.insert(name.to_string(), Rc::new(m)));
+        super::module::get(name, self).and_then(|m| b.insert(name.to_string(), Arc::new(m)));
         b.get(name).cloned()
     }
 }
@@ -154,7 +164,7 @@ pub fn from_pid(pid: u32) -> Option<Process> {
         id: pid,
         is_wow64,
         handle,
-        modules: RefCell::new(HashMap::new()),
+        modules: Arc::new(Mutex::new(HashMap::new())),
     })
 }
 

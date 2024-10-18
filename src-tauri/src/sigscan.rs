@@ -21,6 +21,8 @@
 // SOFTWARE.
 
 extern crate serde_json;
+use failure::Fail;
+use log::debug;
 use serde::{Deserialize, Serialize};
 
 use crate::memlib::Process;
