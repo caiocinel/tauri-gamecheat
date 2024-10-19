@@ -1,9 +1,18 @@
 import { listen } from "@tauri-apps/api/event";
 import { cursorPosition } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useState } from "react";
+
+
+type Entity = {
+  name: string;
+  health: number;
+  screen_pos: { x: number, y: number };
+};
+
+
 export default function Overlay() {
   const [roundSize, setRoundSize] = useState<number | null>(globalThis.roundSize ?? 2);
-  const [playerData, setPlayerData] = useState<any>(null);
+  const [entityList, setEntityList] = useState<Entity[]>(null);
   const [playerCount, setPlayerCount] = useState<number>(0);
 
   useEffect(() => {
@@ -13,6 +22,10 @@ export default function Overlay() {
 
     listen('update_player_count', (event: any) => {
       setPlayerCount(event.payload);
+    });
+
+    listen<Entity[]>('update-entitylist', (event) => {
+      setEntityList(event.payload);            
     });
 
 
@@ -38,8 +51,25 @@ export default function Overlay() {
     ctx.fillStyle = "red";
     ctx.fillText(`Player Count: ${playerCount}`, 10, 50);
 
+  
+    //loop players and render health/name
+    if(entityList) {
+      entityList.forEach((entity, i) => {
+        ctx.fillText(`${entity.name} - ${entity.health}`, 10, 70 + (i * 20));
+        
+        
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(entity.screen_pos.x, entity.screen_pos.y, 50, 50);
+
+        
+      }
+      );
+    }
+
+
     globalThis.animationId = requestAnimationFrame(render);
-  }, [roundSize, playerCount]);
+  }, [roundSize, playerCount, entityList]);
 
   useEffect(() => {        
     render();
@@ -48,7 +78,7 @@ export default function Overlay() {
         if(globalThis.animationId)
           cancelAnimationFrame(globalThis.animationId);
      };
-  }, [render, roundSize, playerCount]);
+  }, [render, roundSize, playerCount, entityList]);
 
   return (
     <canvas width={1920} height={1080} style={{ height: '100vh', width: '100vw', display: 'block' }} id="overlay" />
