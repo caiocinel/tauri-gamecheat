@@ -1,7 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
-import { cursorPosition } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useState } from "react";
-
+import "./Overlay.css";
 
 type Entity = {
   name: string;
@@ -10,15 +9,11 @@ type Entity = {
 };
 
 
-export default function Overlay() {
-  const [roundSize, setRoundSize] = useState<number | null>(globalThis.roundSize ?? 2);
+export default function Overlay() {  
   const [entityList, setEntityList] = useState<Entity[]>(null);
   const [playerCount, setPlayerCount] = useState<number>(0);
 
   useEffect(() => {
-    listen('change-roundsize', (event: any) => {
-      setRoundSize(event.payload);
-    });
 
     listen('update_player_count', (event: any) => {
       setPlayerCount(event.payload);
@@ -69,7 +64,7 @@ export default function Overlay() {
 
 
     globalThis.animationId = requestAnimationFrame(render);
-  }, [roundSize, playerCount, entityList]);
+  }, [playerCount, entityList]);
 
   useEffect(() => {        
     render();
@@ -78,7 +73,7 @@ export default function Overlay() {
         if(globalThis.animationId)
           cancelAnimationFrame(globalThis.animationId);
      };
-  }, [render, roundSize, playerCount, entityList]);
+  }, [render, playerCount, entityList]);
 
   return (
     <canvas width={1920} height={1080} style={{ height: '100vh', width: '100vw', display: 'block' }} id="overlay" />

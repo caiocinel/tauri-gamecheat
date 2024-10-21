@@ -1,8 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import Menu from "./Menu";
+import Menu from "./menu/Menu";
 import Overlay from "./overlay/Overlay";
-import './App.css';
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

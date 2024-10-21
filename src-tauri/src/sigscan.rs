@@ -21,44 +21,33 @@
 // SOFTWARE.
 
 extern crate serde_json;
-use failure::Fail;
 use log::debug;
 use serde::{Deserialize, Serialize};
 
 use crate::memlib::Process;
-use std::mem;
 
 pub type Result<T> = ::std::result::Result<T, ScanError>;
 
-#[derive(Debug, Fail)]
+#[warn(non_local_definitions)]
+#[derive(Debug)]
 pub enum ScanError {
-    #[fail(display = "Module not found")]
     ModuleNotFound,
-
-    #[fail(display = "Pattern not found")]
     PatternNotFound,
-
-    #[fail(display = "Offset out of module bounds")]
-    OffsetOutOfBounds,
-
-    #[fail(display = "rip_relative failed")]
+    OffsetOutOfBounds,    
     RIPRelativeFailed,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Signature {
-    // Signature name.
-    pub name: String,
-
+pub struct Signature<'a> {   
     // Signature pattern.
-    pub pattern: String,
+    pub pattern: &'a str,
 
     // Module name.
-    pub module: String,
+    pub module: &'a str,
 
     // Signature offsets for dereferencing.
     #[serde(default)]
-    pub offsets: Vec<isize>,
+    pub offset: isize,
 
     // Extra to be added to the result.
     #[serde(default)]
@@ -77,23 +66,8 @@ pub struct Signature {
     pub rip_offset: isize,
 }
 
-impl Default for Signature {
-    fn default() -> Self {
-        Signature {
-            name: "".to_string(),
-            pattern: "".to_string(),
-            module: "".to_string(),
-            offsets: vec![],
-            extra: 0,
-            relative: false,
-            rip_relative: false,
-            rip_offset: 0,
-        }
-    }
-}
-
 pub fn find_signature(sig: &Signature, process: &Process) -> Result<usize> {
-    debug!("Begin scan: {}", sig.name);
+    debug!("Begin scan");
     debug!("IsWow64: {:?}", process.is_wow64);
     debug!("Load module {}", sig.module);
 
@@ -116,26 +90,26 @@ pub fn find_signature(sig: &Signature, process: &Process) -> Result<usize> {
         addr + module.base
     );
 
-    for (i, o) in sig.offsets.iter().enumerate() {
-        debug!("Offset #{}: ptr: {:#X} offset: {:#X}", i, addr, o);
+    
+    debug!("Offset: ptr: {:#X} offset: {:#X}", addr, sig.offset);
 
-        let pos = (addr as isize).wrapping_add(*o) as usize;
-        let data = module.data.get(pos).ok_or_else(|| {
-            debug!("WARN OOB - ptr: {:#X} module size: {:#X}", pos, module.size);
-            ScanError::OffsetOutOfBounds
-        })?;
+    let pos = (addr as isize).wrapping_add(sig.offset) as usize;
+    let data = module.data.get(pos).ok_or_else(|| {
+        debug!("WARN OOB - ptr: {:#X} module size: {:#X}", pos, module.size);
+        ScanError::OffsetOutOfBounds
+    })?;
 
-        let tmp = if process.is_wow64 {
-            let raw: u32 = unsafe { std::ptr::read_unaligned(data as *const u8 as *const u32) };
-            raw as usize
-        } else {
-            let raw: u64 = unsafe { std::ptr::read_unaligned(data as *const u8 as *const u64) };
-            raw as usize
-        };
+    let tmp = if process.is_wow64 {
+        let raw: u32 = unsafe { std::ptr::read_unaligned(data as *const u8 as *const u32) };
+        raw as usize
+    } else {
+        let raw: u64 = unsafe { std::ptr::read_unaligned(data as *const u8 as *const u64) };
+        raw as usize
+    };
 
-        addr = tmp.wrapping_sub(module.base);
-        debug!("Offset #{}: raw: {:#X} - base => {:#X}", i, tmp, addr);
-    }
+    addr = tmp.wrapping_sub(module.base);
+    debug!("Offset: raw: {:#X} - base => {:#X}", tmp, addr);
+    
 
     if sig.rip_relative {
         debug!(

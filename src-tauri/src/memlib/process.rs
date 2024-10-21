@@ -23,16 +23,13 @@
 extern crate winapi;
 
 use std::borrow::BorrowMut;
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
 use std::{mem, ptr};
 
 use log::{debug, warn};
 
 use self::winapi::shared::basetsd::SIZE_T;
 use self::winapi::shared::minwindef::{BOOL, FALSE, LPCVOID, LPVOID, PBOOL};
-use self::winapi::shared::ntdef::HANDLE;
 use self::winapi::um::handleapi::CloseHandle;
 use self::winapi::um::memoryapi::{ReadProcessMemory, WriteProcessMemory};
 use self::winapi::um::processthreadsapi::OpenProcess;

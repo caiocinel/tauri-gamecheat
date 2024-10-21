@@ -83,22 +83,6 @@ impl Module {
         let raw: T = unsafe { mem::transmute_copy(ptr) };
         Some(raw)
     }
-
-    /// is_relative: if true, the base has already been subtracted.
-    pub fn get_slice(&self, mut offset: usize, len: usize, is_relative: bool) -> Option<&[u8]> {
-        if !is_relative {
-            offset = offset.wrapping_sub(self.base);
-        }
-        self.data.get(offset..(offset + len))
-    }
-
-    /// is_relative: if true, the base has already been subtracted.
-    pub fn get(&self, mut offset: usize, is_relative: bool) -> Option<&[u8]> {
-        if !is_relative {
-            offset = offset.wrapping_sub(self.base);
-        }
-        self.data.get(offset..)
-    }
 }
 
 /// Wrapper around the `Module32FirstW` windows api
